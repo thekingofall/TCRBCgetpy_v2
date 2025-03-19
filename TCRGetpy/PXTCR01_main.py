@@ -29,7 +29,7 @@ Filename.add_argument("--OutDir", type=str, help="Output directory for all resul
 TCRargument.add_argument("--TCR", type=str, help="TCR types:<TRA|TRB|TRA,TRB|...>,defalut:TRA,TRB",default="TRA,TRB")
 TCRargument.add_argument("--Num", type=str, help="TCR num,default:3",default="3")
 
-Modulearg.add_argument("--Module",type=str, help="Some Module you want to run:"+"\n "+"a: run all;f: only for transform ")
+Modulearg.add_argument("--Module",type=str, help="Some Module you want to run:"+"\n "+"a: run all;f: only for transform ",default="fs")
 Modulearg.add_argument("--Statwhat",type=str, help="Some data you want to havce a stat:"+"\n "+"a:run all;a1:run some ;p:only for primary data",default="p")
 Modulearg.add_argument("--BothSeq",type=str, help="Some same Seq in your data:"+"\n "+"default:CAGTGGTATCAACGCAGAG;Others seq you need",default="CAGTGGTATCAACGCAGAG")
 Modulearg.add_argument("--Statindex",type=str, help=" plot:what folder you want to have a plot and stat ,but if want to use this module ,you are better run the Statwhat module before")
@@ -122,8 +122,8 @@ def migecrun3(name, output_dir=".", num=str(3), TCRtypes="TRA,TRB", SPECIES="Hom
     input_file = get_full_path(cdr_dir, name+f".FQ2.t{num}.cf.fastq")
     output_file = get_full_path(cdr_dir, f"{SPECIES}_{name}_t{num}TRA,TRB.cdrblast.txt")
     
-    cmd = f"java -jar {migecpath} CdrBlast -a -R {TCRtypes} {input_file} {output_file}"
-    print(f"Running command: {cmd}")
+    cmd = f"java -jar {migecpath} CdrBlast -S {SPECIES} -a -R {TCRtypes} \"{input_file}\" \"{output_file}\""
+    print(f"执行命令: {cmd}")
     os.system(cmd)
 
 def migecrunfast(name,num=str(3),TCRtypes="TRA,TRB"):
@@ -253,10 +253,37 @@ def draw_picture(name, output_dir=".", num=str(3), TCRtypes="TRA,TRB"):
     print(f"Running command: {cmd}")
     os.system(cmd)
 
-def draw_picture2(name,num=str(3),TCRtypes="TRA,TRB",SPECIES="HomoSapiens"):
-    run="Rscript   "+ Drawpiepath + "  "+ name+".cdrdata/"+SPECIES+"_"+name+"_t"+num+"TRA,TRB.cdrblast.txt     "+name+".cdrdata/"+SPECIES+"_"+name+"_"+TCRtypes+"_t"+num
-    print(run)
-    os.system(run)
+def draw_picture2(name, output_dir=".", num=str(3), TCRtypes="TRA,TRB", SPECIES="HomoSapiens"):
+    """Run R script for visualization with species specification and output directory"""
+    # 确保输出目录存在
+    ensure_dir(output_dir)
+    
+    # 创建文件路径
+    cdr_dir = get_full_path(output_dir, name+".cdrdata")
+    ensure_dir(cdr_dir)
+    
+    # 构建输入和输出文件的完整路径
+    input_file = os.path.join(cdr_dir, f"{SPECIES}_{name}_t{num}TRA,TRB.cdrblast.txt")
+    output_prefix = os.path.join(cdr_dir, f"{SPECIES}_{name}_{TCRtypes}_t{num}")
+    
+    # 检查输入文件是否存在
+    if not os.path.exists(input_file):
+        print(f"警告: 输入文件不存在: {input_file}")
+        print(f"尝试查找当前目录下的文件...")
+        alt_input = f"./{name}.cdrdata/{SPECIES}_{name}_t{num}TRA,TRB.cdrblast.txt"
+        if os.path.exists(alt_input):
+            print(f"找到替代文件: {alt_input}")
+            input_file = alt_input
+            output_prefix = f"./{name}.cdrdata/{SPECIES}_{name}_{TCRtypes}_t{num}"
+        else:
+            print(f"替代文件也不存在: {alt_input}")
+            print(f"检查以下可能的位置:")
+            os.system(f"find {output_dir} -name '*{name}*cdrblast.txt' -type f")
+    
+    # 构建并执行命令
+    cmd = f"Rscript {Drawpiepath} \"{input_file}\" \"{output_prefix}\""
+    print(f"执行命令: {cmd}")
+    os.system(cmd)
 
 def testfordata(R,endnum=10,Tseq="T....T....T....TCTTGGG"):
     FR=open(R,"r")
@@ -474,14 +501,14 @@ if __name__=='__main__':
                     print("this module run the migec")
                     print(name)
                     migecrun3(name=name, output_dir=sample_output_dir, num=num, TCRtypes="TRB", SPECIES="MacacaMulatta")
-                    draw_picture2(name, num=num, TCRtypes="TRB", SPECIES="MacacaMulatta")
+                    draw_picture2(name, output_dir=sample_output_dir, num=num, TCRtypes="TRB", SPECIES="MacacaMulatta")
                 elif verbosity=="fsma":
                     print("this module run the migec")
                     print(name)
                     fq1_path, fq2_path = trans_data(name=name, output_dir=sample_output_dir, r1_file=r1_file, r2_file=r2_file)
                     migecrun1(name=name, output_dir=sample_output_dir, num=num, TCRtypes=TCRtypes)
                     migecrun3(name=name, output_dir=sample_output_dir, num=num, TCRtypes="TRB", SPECIES="MacacaMulatta")
-                    draw_picture2(name, num=num, TCRtypes="TRB", SPECIES="MacacaMulatta")
+                    draw_picture2(name, output_dir=sample_output_dir, num=num, TCRtypes="TRB", SPECIES="MacacaMulatta")
 
                 elif verbosity=="s":
                     print("this module run the migec")
@@ -643,14 +670,14 @@ if __name__=='__main__':
             print("this module run the migec")
             print(name)
             migecrun3(name=name, output_dir=".", num=num, TCRtypes="TRB", SPECIES="MacacaMulatta")
-            draw_picture2(name, num=num, TCRtypes="TRB", SPECIES="MacacaMulatta")
+            draw_picture2(name, output_dir=".", num=num, TCRtypes="TRB", SPECIES="MacacaMulatta")
         elif verbosity=="fsma":
             print("this module run the migec")
             print(name)
             fq1_path, fq2_path = trans_data(name=name, output_dir=".", r1_file=R, r2_file=R2)
             migecrun1(name=name, output_dir=".", num=num, TCRtypes=TCRtypes)
             migecrun3(name=name, output_dir=".", num=num, TCRtypes="TRB", SPECIES="MacacaMulatta")
-            draw_picture2(name, num=num, TCRtypes="TRB", SPECIES="MacacaMulatta")
+            draw_picture2(name, output_dir=".", num=num, TCRtypes="TRB", SPECIES="MacacaMulatta")
 
         elif verbosity=="s":
             print("this module run the migec")
