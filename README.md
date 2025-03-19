@@ -25,6 +25,7 @@ TCRBCgetpy_v2 需要 Python 3.8 环境和一些特定的依赖项。请按照以
    ```bash
    git clone https://github.com/thekingofall/TCRBCgetpy_v2.git
    cd TCRBCgetpy_v2
+   
    ```
 
 4. 安装 Python 依赖项：
@@ -63,6 +64,9 @@ python /path/to/TCRBCgetpy_v2/TCRGetpy/PXTCR01_main.py \
 ### 批量处理多个样本
 
 对于批量处理多个样本，可以使用以下脚本：
+```
+ python TCRBCgetpy_v2/TCRGetpy/PXTCR01_main.py --FQDir data/ --ini TCRBCgetpy_v2/TCRGetpy/congfig.ini --Module a
+```
 
 ```bash
 for i in *; do
